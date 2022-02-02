@@ -21,7 +21,7 @@ macro Curl(u) [dy(u),-dx(u)] //
 
 fespace Vh(Th,P1);
 Vh Az=0, dA, w;
-Vh[int] Ac(numStages);
+Vh[int] Ac(numStages+1);
 Vh[int] Ec(numStages+1);
 Ac[0] = 0;
 Ac[1] = 0;
@@ -43,8 +43,8 @@ mu = 1./nu;
 
 problem MagCLN(Az,w,solver=CG) = int2d(Th)( nu*Curl(Az)'*Curl(w) ) -int2d(Th)( RR*sig*E*w ) +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);
 
-real vminh1=-3, vmaxh1=1, mmaxh1=4, h1; //sweeping the h1=I1 from 10^vmin to 10^vmax in mmax steps
-real vminh3=-3, vmaxh3=1, mmaxh3=4, h3; //sweeping the h3=I1 from 10^vmin to 10^vmax in mmax steps
+real vminh1=-1, vmaxh1=2, mmaxh1=5, h1; //sweeping the h1=I1 from 10^vmin to 10^vmax in mmax steps
+real vminh3=-1, vmaxh3=2, mmaxh3=5, h3; //sweeping the h3=I1 from 10^vmin to 10^vmax in mmax steps
 
 for (int h1idx=0; h1idx<=mmaxh1; h1idx++){
     h1 = 10^(vminh1 + (vmaxh1-vminh1)*h1idx/mmaxh1);
@@ -65,15 +65,15 @@ for (int h1idx=0; h1idx<=mmaxh1; h1idx++){
 
             RR = 1./lambda[0];
             E = Ec[0];
-            MagCLN;            
+            MagCLN; //calculates Az     K*Az = R0*sigma*E0
             Ac[0] = Az;
             lambda[1] = int2d(Th)( nu*(dx(Ac[0])^2+dy(Ac[0])^2) );
             LL = lambda[1];
-            Ec[1] = Ec[0] - Ac[0]/LL;
+            Ec[1] = Ec[0] - Ac[0]/LL; //E2
             E = Ec[1];
-            lambda[1] = int2d(Th)( sig*E^2 );
-            RR = 1./lambda[1];
-            MagCLN;
+            lambda[2] = int2d(Th)( sig*E^2 );
+            RR = 1./lambda[2]; //R2
+            MagCLN; // calculates Az       K*Az = R2*sigma*E2
             Ac[1] = Az;
 
             // updating permeability nu(h1,h3)
@@ -87,17 +87,41 @@ for (int h1idx=0; h1idx<=mmaxh1; h1idx++){
             real magMu = mu[].l2;
             real bflag = err[].l2 / magMu;
 
-            nu = nuNew;
+            nu = 0.8*nu + 0.2*nuNew;
             mu = 1./nu;
 
-            cout << "h1=" << h1 <<"  h3="<< h3 <<"   FPiter="<<FPiter<<"    bflag="<<bflag <<"   magMu="<<magMu << endl;
+            cout << "h1=" << h1 <<"  h3="<< h3 <<"   FPiter="<<FPiter<<"    ||mu-muNew||="<<bflag <<"   ||mu||="<<magMu << endl;
 
-            if (bflag < 1e-5) {
+            if (bflag < 1e-3) {
+                Bm = sqrt(Bx^2+By^2);
+                plot(Bm,cmm="h1="+h1+" h3="+h3,fill=1);
                 cout << "============================================" << endl;
                 break;
             }
 
         }
+
+        // lambda[3] = int2d(Th)( nu*(dx(Ac[1])^2+dy(Ac[1])^2) ); // L3
+        // LL = lambda[3];
+        // Ec[2] = Ec[1] - Ac[1]/LL; //E4
+        // E = Ec[2];
+        // lambda[4] = int2d(Th)( sig*E^2 );
+        // RR = 1./lambda[4]; //R4
+        // MagCLN; // calculates Az       K*Az = R4*sigma*E4
+        // Ac[2] = Ac[1]+Az;
+
+        // obtaining stage 2,3,...
+        for (int n=1; n<numStages; n++){
+            lambda[2*n+1] = int2d(Th)( nu*(dx(Ac[n])^2+dy(Ac[n])^2) ); // L_2n+1
+            LL = lambda[2*n+1];
+            Ec[n+1] = Ec[n] - Ac[n]/LL; //E_2n+2
+            E = Ec[n+1];
+            lambda[2*n+2] = int2d(Th)( sig*E^2 );
+            RR = 1./lambda[2*n+2]; //R4
+            MagCLN; // calculates Az       K*Az = R_2n+2 * sigma * E_2n+2
+            Ac[n+1] = Ac[n]+Az;
+        }
+
     }
 }
 
