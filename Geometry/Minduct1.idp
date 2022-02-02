@@ -1,0 +1,40 @@
+real a  = 50e-3;
+real a1 = 15e-3;
+real a2 = 15e-3; 
+real b  = 40e-3;
+real b1 = 10e-3;  
+real b2 = 10e-3;
+real c  = 5e-3;   
+real c1 = 4e-3;
+real d1 = 0.5e-3;
+
+int n=5;
+real p = 1e3;
+
+border out0(t=0,1){x=c*t;         y=0;}
+border out1(t=0,1){x=(1+t)*c;     y=0;}
+border out2(t=0,1){x=(2+t)*c;     y=0;}
+border out3(t=0,1){x=a2*t+a1;     y=0;}
+border out4(t=0,1){x=a1+a2;       y=(b1+b2)*t;}
+border out5(t=0,1){x=(1-t)*(a1+a2);y=b1+b2;}
+border out6(t=0,1){x=0;           y=-b2*t+b1+b2;}
+border out7(t=0,1){x=0;           y=(1-t)*b1;}
+
+border yok1(t=0,1){x=a1;          y=b1*t;}
+border yok2(t=0,1){x=(1-t)*a1;    y=b1;}
+
+border col1(t=0,1){x=2*c;         y=c*t;}
+border col2(t=0,1){x=(2-t)*c;     y=c;}
+border col3(t=0,1){x=c;           y=(1-t)*c;}
+
+border iro1(t=0,1){x=c+c1+d1;       y=c1*t+d1;}
+border iro2(t=0,1){x=(1-t)*c1+c+d1; y=c1+d1;}
+border iro3(t=0,1){x=c+d1;          y=(1-t)*c1+d1;}
+border iro4(t=0,1){x=c1*t+c+d1;     y=d1;}
+
+mesh Th=buildmesh(out0(c*n*p)+out1(2*c*n*p)+out2(c*n*p)+out3(a2*n*p/4)
+                 +out4(b*n*p/6)+out5(a*n*p/6)+out6(b2*n*p/4)+out7(b1*n*p)
+                 +yok1(b1*n*p)+yok2(a1*n*p)+col1(2*c*n*p)+col2(2*c*n*p)+col3(2*c*n*p)
+                 +iro1(2*c1*n*p)+iro2(2*c1*n*p)+iro3(2*c1*n*p)+iro4(2*c1*n*p));
+
+plot(Th,wait=1);

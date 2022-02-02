@@ -1,0 +1,49 @@
+real a  = 50e-3;
+real a1 = 15e-3;
+real a2 = 15e-3; 
+real b  = 40e-3;
+real b1 = 10e-3;  
+real b2 = 10e-3;
+real c  = 5e-3;   
+real c1 = 4e-3;
+real d1 = 0.5e-3;
+
+int n=5;
+real p = 1e3;
+
+border out0(t=0,1){x=t*(a1+a2);     y=-b1-b2;}
+border out1(t=0,1){x=a1+a2;         y=(b1+b2)*2*t-(b1+b2);}
+border out2(t=0,1){x=(1-t)*(a1+a2); y=b1+b2;}
+border out3(t=0,1){x=0;             y=-b2*t+b1+b2;}
+border out4(t=0,1){x=0;             y=d1+(1-t)*(b1-d1);}
+border out5(t=0,1){x=0;             y=d1-2*t*d1;}
+border out6(t=0,1){x=0;             y=-d1-t*(b1-d1);}
+border out7(t=0,1){x=0;             y=-b2*t-b1;}
+
+border yoke1(t=0,1){x=c*t;          y=d1;}
+border yoke2(t=0,1){x=c;            y=d1+t*(c-d1);}
+border yoke3(t=0,1){x=c*(t+1);      y=c;}
+border yoke4(t=0,1){x=2*c;          y=c-2*c*t;}
+border yoke5(t=0,1){x=2*c-c*t;      y=-c;}
+border yoke6(t=0,1){x=c;            y=-c+t*(c-d1);}
+border yoke7(t=0,1){x=c*(1-t);      y=-d1;}
+border yoke8(t=0,1){x=3*c*t;        y=2*c;}
+border yoke9(t=0,1){x=3*c;          y=2*c-4*c*t;}
+border yoke10(t=0,1){x=3*c*(1-t);   y=-2*c;}
+
+border iro1(t=0,1){x=c+c1+d1;       y=c1*t+d1;}
+border iro2(t=0,1){x=(1-t)*c1+c+d1; y=c1+d1;}
+border iro3(t=0,1){x=c+d1;          y=(1-t)*c1+d1;}
+border iro4(t=0,1){x=c1*t+c+d1;     y=d1;}
+
+border iro5(t=0,1){x=c+c1+d1;       y=-c+c1*t+d1;}
+border iro6(t=0,1){x=(1-t)*c1+c+d1; y=-c+c1+d1;}
+border iro7(t=0,1){x=c+d1;          y=-c+(1-t)*c1+d1;}
+border iro8(t=0,1){x=c1*t+c+d1;     y=-c+d1;}
+
+mesh Th=buildmesh(out0(a*n*p/6) + out1(b*n*p/6) + out2(a*n*p/6) + out3(b2*n*p/4)   +out4(b1*n*p) + out5(4*d1*n*p) +out6(b1*n*p) + out7(b2*n*p/4)
+                 +yoke1(c*n*p*2) + yoke2(c*n*p) + yoke3(c*n*p) + yoke4(2*c*n*p) + yoke5(c*n*p) + yoke6(c*n*p) + yoke7(c*n*p*2) + yoke8(3*c*n*p) + yoke9(4*c*n*p) + yoke10(3*c*n*p)
+                 +iro1(2*c1*n*p)+iro2(2*c1*n*p)+iro3(2*c1*n*p)+iro4(2*c1*n*p)
+                 +iro5(2*c1*n*p)+iro6(2*c1*n*p)+iro7(2*c1*n*p)+iro8(2*c1*n*p));
+plot(Th,wait=1);
+

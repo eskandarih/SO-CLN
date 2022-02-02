@@ -1,0 +1,60 @@
+include "MinductHalf.idp"
+int coil1=Th(a1/2,+c/2).region;
+int coil2=Th(a1/2,-c/2).region;
+int york=Th(a1/2,3*b1/4).region;
+
+int debugging = 1; //if you don't want the plots set this to 0
+
+int numStages = 5;
+real [int] lambda(2*numStages+1);
+real RR,LL;
+ofstream gg("resMassive.txt");
+
+real nu0=1e7/4/pi;
+real nu1=1e3/4/pi;
+
+macro Curl(u) [dy(u),-dx(u)] //
+
+fespace Vh(Th,P1);
+Vh Az=0, w;
+Vh[int] Ac(numStages);
+Vh[int] Ec(numStages+1);
+
+fespace V0(Th,P1dc);
+V0 Bx=0, By=0, Bm, E;
+V0 co=1.0*(region==coil1)+1.0*(region==coil2);
+V0 yo=1.0*(region==york);
+V0 ar=1.0*(region!=york);
+V0 sig = 4.0e7*co+1.0e6*yo;
+V0 nu=nu1*yo + nu0*ar;
+
+E=1.0*co;
+Ec[0] = E;
+lambda[0] = int2d(Th)( sig*E^2 );
+cout <<"R0= "<< lambda[0] << endl;
+gg.scientific << 1./lambda[0] << endl;
+RR = 1./lambda[0];
+for (int stage=0; stage<numStages; stage++)
+{
+    solve cprob(Az,w,solver=CG,eps=1e-8) = int2d(Th)( nu*Curl(Az)'*Curl(w) ) -int2d(Th)( RR*sig*E*w ) 
+                                            +on(out0,Az=0)+on(out1,Az=0)+on(out2,Az=0)+on(out3,Az=0)
+                                            +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);  
+    if (stage == 0) {
+        Ac[0]=Az;
+    } else {
+        Ac[stage] = Ac[stage-1] + Az;
+    }
+    plot(Ec[stage],fill=1,cmm="EC"+(2*stage),wait=debugging);
+	plot(Ac[stage],fill=1,cmm="AC"+(2*stage+1),wait=debugging);
+    lambda[2*stage+1] = int2d(Th)( nu*(dx(Ac[stage])^2+dy(Ac[stage])^2) );
+    cout <<"L"<< 2*stage+1 <<" = "<< lambda[2*stage+1] << endl;
+    gg.scientific << lambda[2*stage+1] << endl;
+    LL = lambda[2*stage+1];
+    Ec[stage+1] = E - Ac[stage]/LL;
+    E = Ec[stage+1];
+    lambda[2*stage+2] = int2d(Th)( sig*E^2 );
+    cout <<"R"<< 2*stage+2 <<" = "<< 1./lambda[2*stage+2] << endl;
+    gg.scientific << 1./lambda[2*stage+2] << endl;
+    RR = 1./lambda[2*stage+2];
+}
+

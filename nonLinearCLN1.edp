@@ -1,0 +1,83 @@
+include "Minduct1.idp"
+int coil=Th(a1/2,c/2).region;
+int york=Th(a1/2,3*b1/4).region;
+
+int debugging = 1; //if you don't want the plots set this to 0
+int NRmax = 40; // maximum number of Newton-Raphson iterations
+int numStages = 5;
+real [int] lambda(2*numStages+1);
+real RR,LL;
+
+real nu0=1e7/4/pi;
+real nu1=1e3/4/pi;
+real hn=10., h0=1.;
+int nb=1;
+
+ofstream gg("nonlinCLNresults.txt");
+gg << "h1           | R0           | L1           | R2           | L3           | R4           | L5           | R6           | L7           | R8           | L9           |" << endl;
+macro Curl(u) [dy(u),-dx(u)] //
+
+fespace Vh(Th,P1);
+Vh Az=0, dA, w;
+Vh[int] Ac(numStages);
+Vh[int] Ec(numStages+1);
+
+fespace V0(Th,P1dc);
+V0 Bx=0, By=0, Bm, E, nu, dnu;
+V0 co=1.0*(region==coil);
+V0 yo=1.0*(region==york);
+V0 ar=1.0*(region!=york);
+V0 sig = 4.0e7*co+1.0e6*yo;
+
+E=1.0*co;
+Ec[0] = E;
+lambda[0] = int2d(Th)( sig*E^2 );
+cout <<"R0= "<< lambda[0] << endl;
+RR = 1./lambda[0];
+
+real vmin=-2, vmax=3, mmax=10, h1; //sweeping the h1=I1 from 10^vmin to 10^vmax in mmax steps
+
+for (int mmm=0; mmm<=mmax; mmm++){
+    // calculating the nonlinear L1 corresponding to V (or h1)
+    // and freezing the nu
+    h1 = 10^(vmin + (vmax-vmin)*mmm/mmax);
+    for (int NRiter=1; NRiter<=NRmax; NRiter++){
+        Bx=dy(Az);
+	    By=-dx(Az);
+        nu=(hn*(Bx^2+By^2)^nb+h0)*nu1*yo + nu0*ar;
+	    dnu=nb*hn*(Bx^2+By^2)^(nb-1)*nu1*yo;
+
+        // freezing dnu
+//        nu=((2*nb+1)*hn*(Bx^2+By^2)^nb+h0)*nu1*yo + nu0*ar;
+
+        solve nonlinL1(dA,w,solver=CG) = int2d(Th)( nu * Curl(dA)' * Curl(w) + 2*dnu*(Curl(Az)'*Curl(dA))*(Curl(Az)'*Curl(w)) ) 
+                                        -int2d(Th)( nu * Curl(Az)' * Curl(w) - h1*RR*sig*E*w)
+                                        +on(out4,dA=0)+on(out5,dA=0)+on(out6,dA=0)+on(out7,dA=0);
+        if(NRiter>10){ Az=Az-dA; } 
+        else if(NRiter>5){ Az=Az-0.8*dA; } 
+        else { Az=Az-0.5*dA; }
+        real err= dA[].l2;
+	    cout << " iter " << NRiter << " err= " << err << endl;
+	    if( err < 1e-10) break;
+    }
+    Ac[0] = Az/h1;
+    lambda[1] = int2d(Th)( nu*(dx(Ac[0])^2+dy(Ac[0])^2) );
+    LL = lambda[1];
+    Az=Ac[0];
+    gg.scientific << h1 << " | " << 1./lambda[0] << " | " << lambda[1] << " | ";
+    // continuing the rest of CLN using the frozen nu
+    for (int stage=1; stage<numStages; stage++){
+        Ec[stage] = E - Ac[stage-1]/LL;
+        E = Ec[stage];
+        lambda[2*stage] = int2d(Th)( sig*E^2 );
+        cout <<"R"<< 2*stage <<" = "<< 1./lambda[2*stage] << endl;
+        RR = 1./lambda[2*stage];
+        solve MagCLN(Az,w,solver=CG) = int2d(Th)( nu*Curl(Az)'*Curl(w) ) -int2d(Th)( RR*sig*E*w ) +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);
+        Ac[stage] = Ac[stage-1] + Az;
+        lambda[2*stage+1] = int2d(Th)( nu*(dx(Ac[stage])^2+dy(Ac[stage])^2) );
+        LL = lambda[2*stage+1];
+        cout <<"L"<< 2*stage+1 <<" = "<< lambda[2*stage+1] << endl;
+        gg.scientific << 1./lambda[2*stage] << " | " << lambda[2*stage+1] << " | ";
+    }
+    gg.scientific << endl;
+}
