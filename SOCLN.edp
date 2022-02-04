@@ -16,9 +16,9 @@ real hn=10., h0=1.;
 int nb=1;
 
 ofstream gg("SOCLNresults.csv");
-gg << "h1,h3,";
+gg << "h1,h3";
 for (int i=0;i<2*numStages+1;i++){
-    gg << "lambda_"+i+",";
+    gg << ",lambda_"+i;
 }
 gg << endl;
 
@@ -48,14 +48,34 @@ mu = 1./nu;
 
 problem MagCLN(Az,w,solver=CG) = int2d(Th)( nu*Curl(Az)'*Curl(w) ) -int2d(Th)( RR*sig*E*w ) +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);
 
-real vminh1=-1, vmaxh1=1.3, mmaxh1=30, h1; //sweeping the h1=I1 from 10^vmin to 10^vmax in mmax steps
-real vminh3=-1, vmaxh3=1.3, mmaxh3=30, h3; //sweeping the h3=I1 from 10^vmin to 10^vmax in mmax steps
+// setting up the range of h1 and h3 variations
+real vminh1=-1, vmaxh1=1.3, mmaxh1=15; //sweeping the h1=I1 from 10^vmin to 10^vmax in mmax steps
+real[int] h1Positives(mmaxh1);
+for [i, bi : h1Positives] {
+    bi = 10^(vminh1 + (vmaxh1-vminh1+1)*i/mmaxh1);
+}
+real[int] h1Negetives(mmaxh1);
+h1Negetives = -h1Positives;
+real[int] h1Values(mmaxh1);
+h1Values = [h1Negetives,h1Positives];
+h1Values.sort;
+cout << "h1Values= " << h1Values << endl;
 
-for (int h1idx=0; h1idx<=mmaxh1; h1idx++){
-    h1 = 10^(vminh1 + (vmaxh1-vminh1)*h1idx/mmaxh1);
+real vminh3=-1, vmaxh3=1.3, mmaxh3=15; //sweeping the h3=I1 from 10^vmin to 10^vmax in mmax steps
+real[int] h3Positives(mmaxh3);
+for [i, bi : h3Positives] {
+    bi = 10^(vminh3 + (vmaxh3-vminh3+1)*i/mmaxh3);
+}
+real[int] h3Negetives(mmaxh3);
+h3Negetives = -h3Positives;
+real[int] h3Values(mmaxh3);
+h3Values = [h3Negetives,h3Positives];
+h3Values.sort;
+cout << "h3Values= " << h3Values << endl;
 
-    for (int h3idx=0; h3idx<=mmaxh3; h3idx++){
-        h3 = 10^(vminh3 + (vmaxh3-vminh3)*h3idx/mmaxh3);
+for [i,h1 : h1Values]{
+
+    for [j,h3 : h3Values]{
 
         // updating permeability nu(h1,h3)
         Az = h1*Ac[0] + h3*Ac[1];
@@ -126,5 +146,6 @@ for (int h1idx=0; h1idx<=mmaxh1; h1idx++){
         gg.scientific << endl;
 
     }
+
 }
 

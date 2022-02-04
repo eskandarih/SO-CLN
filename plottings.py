@@ -21,10 +21,14 @@ G8 = df["lambda_8"].to_numpy().reshape(numRows,numRows)
 
 
 fig, ax = plt.subplots()
-ax.set(xlabel='h1 (A)',ylabel='h3 (A)',xscale='log',yscale='log',title="L7")
-pos = ax.contourf(h1, h3, L7, 20, cmap='RdGy')
+ax.set(xlabel='h1 (A)',ylabel='h3 (A)',title="L1") #,xscale='log',yscale='log'
+pos = ax.contourf(h1, h3, L1, 20, cmap='RdGy')
 fig.colorbar(pos,ax=ax)
-plt.savefig("res/L7.png")
+plt.savefig("res/L1.png")
 # plt.show()
 
 
+fig3d, ax3d = plt.subplots(subplot_kw={"projection": "3d"})
+pos3d = ax3d.plot_surface(h3,h3,L1, cmap='RdGy')
+# pos3d = ax3d.scatter(h1,h3,L1, cmap='RdGy')
+plt.show()

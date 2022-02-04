@@ -1,3 +1,3 @@
 # SO-CLN
 
-![formula](https://render.githubusercontent.com/render/math?math=e^{i \pi} = -1)
+![geom](res/932/G0.png)
