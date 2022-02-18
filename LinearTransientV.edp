@@ -1,0 +1,94 @@
+include "./Geometry/Minduct1.idp"
+int coil=Th(a1/2,c/2).region;
+int york=Th(a1/2,3*b1/4).region;
+
+verbosity = 0;
+int debugging = 1; //if you don't want the plots set this to 0
+
+int N = 2*90;
+real t=0;
+real F=50;          //周波数
+real omega=2*pi*F;  //角周波数
+real T =2/F;
+real dt=T/N;
+real nu0=1e7/4/pi;
+real nu1=1e4/4/pi;
+
+ofstream gg("res/LinearTransientresults.csv");
+macro Curl(u) [dy(u),-dx(u)] //
+
+fespace Vh(Th,P1);
+Vh Az=0, Aprev=0, w;
+
+fespace V0(Th,P1dc);
+V0 Bx=0, By=0, Bm, E, nu, mu;
+V0 co=1.0*(region==coil);
+V0 yo=1.0*(region==york);
+V0 ar=1.0*(region!=york);
+V0 sig = 4.0e7*co+1.0e6*yo;
+
+E=1.0*co;
+real GG = int2d(Th)( sig*E^2 );
+real RR = 1./GG;
+real S=int2d(Th,coil)(1.0); //question
+cout << "S=" << S << endl;
+
+nu=nu1*yo + nu0*ar;
+mu = 1./nu;
+
+varf kcMatVar(Az,w) = int2d(Th)( nu*Curl(Az)'*Curl(w) + sig*Az*w/dt ) +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);
+matrix<real> kcMat=kcMatVar(Vh,Vh);
+cout << "kcMat=(" << kcMat.n << "," << kcMat.m << ")" << endl;
+
+varf fVecVar(unused,w) = int2d(Th)( -1.0*w*co/S ) +on(out4,unused=0)+on(out5,unused=0)+on(out6,unused=0)+on(out7,unused=0);
+Vh fVec = fVecVar(0,Vh);
+cout << "fVec=(" << fVec.n << "," << 1 << ")" << endl;
+
+varf cMatVar(Az,w) = int2d(Th)( sig*Az*w/dt ) +on(out4,Az=0)+on(out5,Az=0)+on(out6,Az=0)+on(out7,Az=0);
+matrix<real> cMat = cMatVar(Vh,Vh);
+cout << "cMat=(" << cMat.n << "," << cMat.m << ")" << endl;
+
+matrix<real> TMat = [[kcMat, fVec[]],[fVec[]',dt*RR]];
+set(TMat, solver=sparsesolver);
+cout << "TMat=(" << TMat.n << "," << TMat.m << ")" << endl;
+
+matrix<real> RMat = [[cMat, 0],[fVec[]',0]];
+set(RMat, solver=sparsesolver);
+cout << "RMat=(" << RMat.n << "," << RMat.m << ")" << endl;
+
+Vh zeroVec = 0;
+cout << "zeroVec=(" << zeroVec.n << "," << 1 << ")" << endl;
+
+real[int] voltVec = [zeroVec[],1];
+cout << "voltVec=(" << voltVec.n << "," << 1 << ")" << endl;
+
+real[int] rhsVec = [zeroVec[], 0];
+real[int] yVec = [zeroVec[], 0];
+real[int] temp = [zeroVec[], 0];
+real Iold = 0;
+real Vin = 0;
+real I = 0;
+
+for (int i=0; i<=N; i++){
+    Vin = sin(omega*t);
+    voltVec = [zeroVec[],dt*Vin];
+
+    yVec = [Az[], I];
+    rhsVec = RMat * yVec;
+    rhsVec = rhsVec + voltVec;
+
+    yVec = TMat^-1*rhsVec;
+    [Az[],I] = yVec;
+
+    cout << "t=" << t << " I=" << I << endl;
+    plot(Th,Az,wait=0,fill=1,cmm="t="+t,dim=2);
+
+    t=t+dt;
+}
+
+// for(int i=0; i<yVec.n; i++){
+//     cout << yVec[i] << " ";
+//     if(fmod(i,50)==0){
+//         cout << endl;
+//     }
+// }

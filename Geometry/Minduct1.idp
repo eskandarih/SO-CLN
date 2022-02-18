@@ -8,7 +8,7 @@ real c  = 5e-3;
 real c1 = 4e-3;
 real d1 = 0.5e-3;
 
-int n=5;
+int n=4;
 real p = 1e3;
 
 border out0(t=0,1){x=c*t;         y=0;}
@@ -32,9 +32,9 @@ border iro2(t=0,1){x=(1-t)*c1+c+d1; y=c1+d1;}
 border iro3(t=0,1){x=c+d1;          y=(1-t)*c1+d1;}
 border iro4(t=0,1){x=c1*t+c+d1;     y=d1;}
 
-mesh Th=buildmesh(out0(c*n*p)+out1(1*c*n*p)+out2(c*n*p)+out3(a2*n*p/10)
-                 +out4(b*n*p/15)+out5(a*n*p/15)+out6(b2*n*p/10)+out7(b1*n*p)
+mesh Th=buildmesh(out0(c*n*p)+out1(1*c*n*p)+out2(c*n*p)+out3(a2*n*p/15)
+                 +out4(b*n*p/20)+out5(a*n*p/20)+out6(b2*n*p/15)+out7(b1*n*p)
                  +yok1(b1*n*p)+yok2(a1*n*p)+col1(1*c*n*p)+col2(1*c*n*p)+col3(1*c*n*p)
-                 +iro1(1*c1*n*p)+iro2(1*c1*n*p)+iro3(1*c1*n*p)+iro4(1*c1*n*p));
+                 +iro1(0.8*c1*n*p)+iro2(0.8*c1*n*p)+iro3(0.8*c1*n*p)+iro4(0.8*c1*n*p));
 
-plot(Th,wait=1);
+// plot(Th,wait=1);
